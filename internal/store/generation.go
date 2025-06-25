@@ -279,5 +279,5 @@ func (s *Store) generationGet(uuid uuid.UUID) (g *Generation, err error) {
 }
 
 func GenerationHasToBeBuilt(g Generation) bool {
-	return g.EvalStatus == Evaluated && g.BuildStatus == BuildInit
+	return g.EvalStatus == Evaluated && g.BuildStatus != Built
 }
