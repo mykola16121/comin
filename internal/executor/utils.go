@@ -19,7 +19,7 @@ import (
 // GetExpectedMachineId evals
 // nixosConfigurations.MACHINE.config.services.comin.machineId and
 // returns (machine-id, nil) is comin.machineId is set, ("", nil) otherwise.
-func getExpectedMachineId(path, hostname string) (machineId string, err error) {
+func getExpectedMachineId(ctx context.Context, path, hostname string) (machineId string, err error) {
 	expr := fmt.Sprintf("%s#nixosConfigurations.%s.config.services.comin.machineId", path, hostname)
 	args := []string{
 		"eval",
@@ -27,7 +27,7 @@ func getExpectedMachineId(path, hostname string) (machineId string, err error) {
 		"--json",
 	}
 	var stdout bytes.Buffer
-	err = runNixCommand(args, &stdout, os.Stderr)
+	err = runNixCommand(ctx, args, &stdout, os.Stderr)
 	if err != nil {
 		return
 	}
@@ -46,12 +46,12 @@ func getExpectedMachineId(path, hostname string) (machineId string, err error) {
 	return
 }
 
-func runNixCommand(args []string, stdout, stderr io.Writer) (err error) {
+func runNixCommand(ctx context.Context, args []string, stdout, stderr io.Writer) (err error) {
 	commonArgs := []string{"--extra-experimental-features", "nix-command", "--extra-experimental-features", "flakes", "--accept-flake-config"}
 	args = append(commonArgs, args...)
 	cmdStr := fmt.Sprintf("nix %s", strings.Join(args, " "))
 	logrus.Infof("nix: running '%s'", cmdStr)
-	cmd := exec.Command("nix", args...)
+	cmd := exec.CommandContext(ctx, "nix", args...)
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
 	err = cmd.Run()
@@ -71,7 +71,7 @@ func showDerivation(ctx context.Context, flakeUrl, hostname string) (drvPath str
 		"--show-trace",
 	}
 	var stdout bytes.Buffer
-	err = runNixCommand(args, &stdout, os.Stderr)
+	err = runNixCommand(ctx, args, &stdout, os.Stderr)
 	if err != nil {
 		return
 	}
@@ -98,7 +98,7 @@ func build(ctx context.Context, drvPath string) (err error) {
 		fmt.Sprintf("%s^*", drvPath),
 		"-L",
 		"--no-link"}
-	err = runNixCommand(args, os.Stdout, os.Stderr)
+	err = runNixCommand(ctx, args, os.Stdout, os.Stderr)
 	if err != nil {
 		return
 	}
